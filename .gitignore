@@ -1,0 +1,19 @@
+# ---- generated scan reports (recreated on every run) ----
+reports/
+*.sarif
+*.html
+
+# ---- local env / scratch ----
+.env
+*.log
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ---- language artifacts (if the project grows) ----
+__pycache__/
+node_modules/
+dist/

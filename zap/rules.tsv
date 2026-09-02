@@ -1,0 +1,119 @@
+# =============================================================================
+# ZAP baseline scan rule tuning (zap-baseline.py config format)
+#
+# Each rule line:   <rule-id><TAB><FAIL|WARN|IGNORE>
+# Lines starting with '#' and blank lines are ignored.
+#
+# Gate policy:
+#   FAIL   -> breaks the CI build (HIGH-risk findings only)
+#   WARN   -> reported in the HTML/JSON report, does not break the build
+#   IGNORE -> skipped entirely (low-noise informational findings)
+#
+# Rules not listed here default to WARN.
+# Note: 400xx rules are active-scan rules (XSS/SQLi families). They never fire
+# in a passive baseline scan, but listing them as FAIL documents the policy for
+# the authenticated full scan on the weekend-2 roadmap.
+# =============================================================================
+
+# --- HIGH risk: break the build ---------------------------------------------
+10062	FAIL
+10048	FAIL
+40012	FAIL
+40014	FAIL
+40016	FAIL
+40017	FAIL
+40018	FAIL
+40019	FAIL
+40020	FAIL
+40021	FAIL
+40022	FAIL
+40024	FAIL
+# 10062 PII Disclosure (High)
+# 10048 Remote Code Execution - ShellShock (High)
+# 40012/40014/40016/40017 Cross Site Scripting families (High)
+# 40018/40019/40020/40021/40022/40024 SQL Injection families (High)
+
+# --- MEDIUM risk, security-relevant: report, don't break ---------------------
+10038	WARN
+10020	WARN
+10202	WARN
+10098	WARN
+10040	WARN
+10108	WARN
+10110	WARN
+10043	WARN
+# 10038 Content Security Policy (CSP) Header Not Set
+# 10020 X-Frame-Options Header Not Set
+# 10202 Absence of Anti-CSRF Tokens
+# 10098 Cross-Domain Misconfiguration
+# 10040 Secure Pages Include Mixed Content
+# 10108 Reverse Tabnabbing
+# 10110 Dangerous JS Functions
+# 10043 Session ID in URL Rewrite
+
+# --- LOW risk: report as security hygiene ------------------------------------
+10021	WARN
+10016	WARN
+10015	WARN
+10054	WARN
+10011	WARN
+10010	WARN
+10012	WARN
+10035	WARN
+10055	WARN
+10036	WARN
+10037	WARN
+10039	WARN
+10019	WARN
+10041	WARN
+10023	WARN
+10024	WARN
+10027	WARN
+10094	WARN
+10095	WARN
+10096	WARN
+10097	WARN
+10105	WARN
+10116	WARN
+10117	WARN
+# 10021 X-Content-Type-Options Header Missing
+# 10016 Web Browser XSS Protection Not Enabled
+# 10015 Re-Examine Cache-control Directives
+# 10054 Cookie Without HttpOnly Flag
+# 10011 Cookie Without Secure Flag
+# 10010 Cookie No HttpOnly Flag
+# 10012 Password Autocomplete in Browser
+# 10035 Strict-Transport-Security Header Not Set
+# 10055 CSP (weak directives)
+# 10036 Server Leaks Version Information
+# 10037 Server Leaks Information via X-Powered-By
+# 10039 X-Backend-Server Header Information Leak
+# 10019 Content-Type Header Missing
+# 10041 HTTP to HTTPS Insecure Transition
+# 10023 Information Disclosure - Debug Error Messages
+# 10024 Information Disclosure - Sensitive Information in URL
+# 10027 Information Disclosure - Suspicious Comments
+# 10094 Base64 Disclosure
+# 10095 Backup File Disclosure
+# 10096 Timestamp Disclosure
+# 10097 Hash Disclosure
+# 10105 Weak Authentication Method
+# 10116/10117 Server Leaks Information via X-AspNet(-Mvc)-Version
+
+# --- INFORMATIONAL / low-noise: ignore ---------------------------------------
+10109	IGNORE
+10104	IGNORE
+10111	IGNORE
+10112	IGNORE
+10113	IGNORE
+10032	IGNORE
+10050	IGNORE
+10115	IGNORE
+# 10109 Modern Web Application
+# 10104 User Agent Fuzzer (the scanner's own traffic)
+# 10111 Authentication Request Identified
+# 10112 Session Management Response Identified
+# 10113 Verification Request Identified
+# 10032 Viewstate (ASP.NET only - not applicable to Juice Shop)
+# 10050 Retrieved from Cache
+# 10115 Re-examine Cache-control Directives

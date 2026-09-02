@@ -1,0 +1,27 @@
+# OWASP Juice Shop — intentionally-vulnerable web app, used as the DAST target.
+# The security industry trains on it; we scan it.
+#
+# Start it with:  docker compose up -d
+# Stop it with:   docker compose down
+# Health check:   curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/
+
+services:
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    container_name: juice-shop
+    ports:
+      - "3000:3000"
+    networks:
+      - secgate
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    restart: unless-stopped
+
+networks:
+  secgate:
+    name: secgate
+    driver: bridge
