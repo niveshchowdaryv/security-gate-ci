@@ -1,0 +1,144 @@
+# Security Gate — automated security checks on every push and pull request.
+#
+#   Job 1 — gitleaks : fail the build if any secret was committed.
+#   Job 2 — trivy    : fail the build on HIGH/CRITICAL dependency vulnerabilities.
+#   Job 3 — zap      : start OWASP Juice Shop, run the OWASP ZAP baseline DAST
+#                      scan against it, fail the build on HIGH-risk findings.
+#
+# Scanner reports are uploaded as workflow artifacts, even when the gate fails,
+# so you can always inspect exactly what broke the build.
+
+name: Security Gate
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: "0 6 * * 1" # weekly scan, every Monday at 06:00 UTC
+  workflow_dispatch: # allow manual runs from the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  # --------------------------------------------------------------------------
+  gitleaks:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history, so every commit is scanned
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # --------------------------------------------------------------------------
+  trivy:
+    name: Dependency scan (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Trivy filesystem scan (gate on HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "HIGH,CRITICAL"
+          ignore-unfixed: true
+          exit-code: "1" # fail the build when HIGH/CRITICAL vulns are found
+
+      - name: Trivy image scan of the DAST target (report only)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: "bkimminich/juice-shop:latest"
+          format: "sarif"
+          output: "trivy-juiceshop.sarif"
+          severity: "HIGH,CRITICAL"
+          ignore-unfixed: true
+          exit-code: "0" # report-only; set to "1" to gate on the deployed image too
+
+      - name: Upload Trivy reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-reports
+          path: |
+            trivy-results.sarif
+            trivy-juiceshop.sarif
+
+  # --------------------------------------------------------------------------
+  zap:
+    name: DAST scan (OWASP ZAP vs Juice Shop)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start OWASP Juice Shop
+        run: docker compose up -d
+
+      - name: Wait for Juice Shop to be healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/ > /dev/null; then
+              echo "Juice Shop is up at http://localhost:3000"
+              exit 0
+            fi
+            echo "Waiting for Juice Shop... ($i/30)"
+            sleep 5
+          done
+          echo "::error::Juice Shop did not start in time"
+          docker compose logs --tail 50 juice-shop
+          exit 1
+
+      # Why not zaproxy/action-baseline here? A container cannot reach the
+      # runner's localhost, so the action's wrapper can't target a
+      # compose-started app on 127.0.0.1. We run the same official ZAP image
+      # directly, attached to the compose "secgate" network, and target the
+      # Juice Shop service by name. Same scanner, full control of the flags.
+      - name: Run ZAP baseline scan
+        run: |
+          mkdir -p reports && chmod 777 reports
+          set +e
+          docker run --rm \
+            --network secgate \
+            -v "${{ github.workspace }}/zap:/zap/wrk:ro" \
+            -v "${{ github.workspace }}/reports:/zap/reports" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+              -t http://juice-shop:3000 \
+              -c /zap/wrk/rules.tsv \
+              -r /zap/reports/zap-baseline.html \
+              -J /zap/reports/zap-baseline.json \
+              -a
+          ZAP_EXIT=$?
+          set -e
+          # zap-baseline exit codes: 0 = clean, 1 = FAIL-level findings,
+          # 2 = WARN-level only, 3 = scan error.
+          # Gate policy: break the build on HIGH-risk (FAIL) findings only.
+          if [ "$ZAP_EXIT" -eq 1 ] || [ "$ZAP_EXIT" -eq 3 ]; then
+            echo "::error::ZAP baseline failed (exit $ZAP_EXIT): HIGH-risk findings or scan error"
+            exit 1
+          fi
+          echo "ZAP baseline passed the HIGH-risk gate (exit code $ZAP_EXIT)"
+
+      - name: Upload ZAP reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-reports
+          path: reports/zap-baseline.*
+
+      - name: Stop Juice Shop
+        if: always()
+        run: docker compose down
