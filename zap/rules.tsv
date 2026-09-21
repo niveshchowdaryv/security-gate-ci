@@ -12,7 +12,7 @@
 # Rules not listed here default to WARN.
 # Note: 400xx rules are active-scan rules (XSS/SQLi families). They never fire
 # in a passive baseline scan, but listing them as FAIL documents the policy for
-# the authenticated full scan on the weekend-2 roadmap.
+# the authenticated full scan I want to add later (see README).
 # =============================================================================
 
 # --- HIGH risk: break the build ---------------------------------------------
