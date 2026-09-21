@@ -1,8 +1,8 @@
 # =============================================================================
 # ZAP baseline scan rule tuning (zap-baseline.py config format)
 #
-# Each rule line:   <rule-id><TAB><FAIL|WARN|IGNORE>
-# Lines starting with '#' and blank lines are ignored.
+# Each rule line:   <rule-id><TAB><FAIL|WARN|IGNORE><TAB><url-regex>
+# (.*) matches every URL. Lines starting with '#' and blank lines are ignored.
 #
 # Gate policy:
 #   FAIL   -> breaks the CI build (HIGH-risk findings only)
@@ -16,32 +16,32 @@
 # =============================================================================
 
 # --- HIGH risk: break the build ---------------------------------------------
-10062	FAIL
-10048	FAIL
-40012	FAIL
-40014	FAIL
-40016	FAIL
-40017	FAIL
-40018	FAIL
-40019	FAIL
-40020	FAIL
-40021	FAIL
-40022	FAIL
-40024	FAIL
+10062	FAIL	(.*)
+10048	FAIL	(.*)
+40012	FAIL	(.*)
+40014	FAIL	(.*)
+40016	FAIL	(.*)
+40017	FAIL	(.*)
+40018	FAIL	(.*)
+40019	FAIL	(.*)
+40020	FAIL	(.*)
+40021	FAIL	(.*)
+40022	FAIL	(.*)
+40024	FAIL	(.*)
 # 10062 PII Disclosure (High)
 # 10048 Remote Code Execution - ShellShock (High)
 # 40012/40014/40016/40017 Cross Site Scripting families (High)
 # 40018/40019/40020/40021/40022/40024 SQL Injection families (High)
 
 # --- MEDIUM risk, security-relevant: report, don't break ---------------------
-10038	WARN
-10020	WARN
-10202	WARN
-10098	WARN
-10040	WARN
-10108	WARN
-10110	WARN
-10043	WARN
+10038	WARN	(.*)
+10020	WARN	(.*)
+10202	WARN	(.*)
+10098	WARN	(.*)
+10040	WARN	(.*)
+10108	WARN	(.*)
+10110	WARN	(.*)
+10043	WARN	(.*)
 # 10038 Content Security Policy (CSP) Header Not Set
 # 10020 X-Frame-Options Header Not Set
 # 10202 Absence of Anti-CSRF Tokens
@@ -52,30 +52,30 @@
 # 10043 Session ID in URL Rewrite
 
 # --- LOW risk: report as security hygiene ------------------------------------
-10021	WARN
-10016	WARN
-10015	WARN
-10054	WARN
-10011	WARN
-10010	WARN
-10012	WARN
-10035	WARN
-10055	WARN
-10036	WARN
-10037	WARN
-10039	WARN
-10019	WARN
-10041	WARN
-10023	WARN
-10024	WARN
-10027	WARN
-10094	WARN
-10095	WARN
-10096	WARN
-10097	WARN
-10105	WARN
-10116	WARN
-10117	WARN
+10021	WARN	(.*)
+10016	WARN	(.*)
+10015	WARN	(.*)
+10054	WARN	(.*)
+10011	WARN	(.*)
+10010	WARN	(.*)
+10012	WARN	(.*)
+10035	WARN	(.*)
+10055	WARN	(.*)
+10036	WARN	(.*)
+10037	WARN	(.*)
+10039	WARN	(.*)
+10019	WARN	(.*)
+10041	WARN	(.*)
+10023	WARN	(.*)
+10024	WARN	(.*)
+10027	WARN	(.*)
+10094	WARN	(.*)
+10095	WARN	(.*)
+10096	WARN	(.*)
+10097	WARN	(.*)
+10105	WARN	(.*)
+10116	WARN	(.*)
+10117	WARN	(.*)
 # 10021 X-Content-Type-Options Header Missing
 # 10016 Web Browser XSS Protection Not Enabled
 # 10015 Re-Examine Cache-control Directives
@@ -101,14 +101,14 @@
 # 10116/10117 Server Leaks Information via X-AspNet(-Mvc)-Version
 
 # --- INFORMATIONAL / low-noise: ignore ---------------------------------------
-10109	IGNORE
-10104	IGNORE
-10111	IGNORE
-10112	IGNORE
-10113	IGNORE
-10032	IGNORE
-10050	IGNORE
-10115	IGNORE
+10109	IGNORE	(.*)
+10104	IGNORE	(.*)
+10111	IGNORE	(.*)
+10112	IGNORE	(.*)
+10113	IGNORE	(.*)
+10032	IGNORE	(.*)
+10050	IGNORE	(.*)
+10115	IGNORE	(.*)
 # 10109 Modern Web Application
 # 10104 User Agent Fuzzer (the scanner's own traffic)
 # 10111 Authentication Request Identified
