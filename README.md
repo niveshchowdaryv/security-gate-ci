@@ -111,6 +111,10 @@ old two-field layout.
 - The Trivy action tag needs the `v` prefix (`@v0.33.1`, not `@0.33.1`) —
   without it the workflow fails at setup with a "not found" error that looks
   like your fault.
+- Pin the Trivy *binary* version too (`version: "v0.74.0"` in the workflow).
+  The action's default pointed at a release tag that doesn't exist, so the
+  setup step died silently right after "found version". Took me an embarrassingly
+  long stare at the logs to figure that one out.
 - Gitleaks scans full history, so if you ever force-push a rewritten history
   it can complain about SHAs that no longer exist. That's not a real leak,
   it's the action chasing a ghost commit.
